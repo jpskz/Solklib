@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SuperLib • Vanilla MVP</title>
+  <meta name="description" content="SuperLib : librairie d'apprentissage JavaScript avec snippets copiables." />
+  <style>
+    /* =====================
+       Design tokens (CSS natif)
+       ===================== */
+    :root {
+      --bg: #0b0d10;
+      --bg-soft: #111419;
+      --text: #e8ecf1;
+      --muted: #b6c1cf;
+      --brand: #f7df1e;
+      --brand-2: #a8ff60;
+      --danger: #ff6b6b;
+      --ok: #4ade80;
+      --border: #243042;
+      --code-bg: #000000;
+      --shadow: 0 6px 24px rgba(0,0,0,.35);
+      --radius: 14px;
+      --space: 14px;
+      --space-lg: 22px;
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #ffffff;
+        --bg-soft: #f5f7fb;
+        --text: #0b1220;
+        --muted: #49566b;
+        --brand: #0ea5e9;
+        --brand-2: #10b981;
+        --border: #d8e0ee;
+        --code-bg: #000000;
+        --shadow: 0 4px 18px rgba(0,0,0,.08);
+      }
+    }
+
+    /* Reset léger */
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; font: 16px/1.5 var(--font); color: var(--text); background: radial-gradient(1200px 800px at 10% -10%, rgba(110,231,255,.08), transparent 40%), radial-gradient(900px 600px at 90% -10%, rgba(168,255,96,.08), transparent 35%), var(--bg); }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; }
+
+    /* Layout */
+    header {
+      position: sticky; top: 0; z-index: 10;
+      display: flex; align-items: center; gap: var(--space);
+      padding: var(--space-lg);
+      backdrop-filter: saturate(120%) blur(8px);
+      background: color-mix(in oklab, var(--bg) 85%, transparent);
+      border-bottom: 1px solid var(--border);
+    }
+    header .brand { font-weight: 800; letter-spacing: .3px; }
+    header .brand em { font-style: normal; color: var(--brand); }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: var(--space-lg);
+      padding: var(--space-lg);
+    }
+    aside {
+      position: sticky; top: 74px; align-self: start;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--space-lg);
+      box-shadow: var(--shadow);
+    }
+    main {
+      display: grid; gap: var(--space-lg);
+    }
+
+    /* Widgets */
+    .search {
+      display: flex; gap: 10px; align-items: center;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+    }
+    .search input {
+      flex: 1; border: 0; outline: none; background: transparent; color: var(--text);
+    }
+
+    .filters { display: grid; gap: 8px; margin-top: var(--space-lg); }
+    .filters h4 { margin: 0; font-size: .95rem; opacity: .9; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      padding: 6px 10px; border-radius: 999px;
+      border: 1px solid var(--border); background: var(--bg);
+      cursor: pointer; user-select: none; font-size: .85rem; color: var(--muted);
+    }
+    .chip[data-active="true"] { color: var(--text); border-color: color-mix(in oklab, var(--brand) 40%, var(--border)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--brand) 45%, transparent); }
+
+    .card {
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--space-lg);
+      box-shadow: var(--shadow);
+    }
+
+    .card header { position: relative; top: auto; backdrop-filter: none; background: transparent; border: 0; padding: 0; }
+    .title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 6px; }
+    .title h3 { margin: 0; font-size: 1.05rem; }
+    .badges { display: flex; gap: 8px; flex-wrap: wrap; }
+    .badge { font-size: .76rem; padding: 4px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); background: var(--bg); text-align: center; display: inline-flex; align-items: center; justify-content: center; }
+
+    .desc { color: var(--muted); margin: 8px 0 12px; }
+
+    pre { margin: 0; background: var(--code-bg); color: #dbe7f3; padding: 12px; border-radius: 10px; overflow: auto; font: 13px/1.5 var(--mono); }
+    code .cmt { color: var(--ok); }
+
+    .actions { display: flex; gap: 8px; margin-top: 10px; }
+    .btn {
+      padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--text); cursor: pointer;
+    }
+    .btn.primary { border-color: color-mix(in oklab, var(--brand) 35%, var(--border)); }
+    .btn.ok { border-color: color-mix(in oklab, var(--brand-2) 35%, var(--border)); }
+    .btn:disabled { opacity: .55; cursor: not-allowed; }
+
+    .grid { display: grid; gap: var(--space-lg); grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+
+    footer { padding: var(--space-lg); color: var(--muted); text-align: center; border-top: 1px solid var(--border); }
+
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; }
+      aside { position: static; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">Solk<em>Lib</em> • Vanilla | Next.js | Nuxt.js | Node.js</div>
+    <div style="margin-left:auto; color:var(--muted); font-size:.95rem">Copie → Colle → Mémorise → Apprends</div>
+  </header>
+
+  <div class="shell">
+    <aside>
+      <div class="search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 21l-4.2-4.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.6"/></svg>
+        <input id="q" placeholder="Rechercher un snippet (ex: fetch, DOM)" autocomplete="off" />
+      </div>
+
+      <div class="filters">
+        <h4>Catégories</h4>
+        <div class="chips" id="cats"></div>
+        
+        <h4>Environnement</h4>
+        <div class="chips" id="envs"></div>
+      </div>
+    </aside>
+
+    <main>
+      <section class="card">
+        <h2 style="margin:0 0 8px">Snippets Vanilla | Next.js | Nuxt.js | Node.js</h2>
+        <p class="desc">Ces blocs reprennent les codes afin d'aider à la progression et l'apprentissage de JavaScript ainsi que ses différents frameworks. Chaque bloc contient une courte description ai.</p>
+      </section>
+
+      <section id="list" class="grid" aria-live="polite"></section>
+    </main>
+  </div>
+
+  <footer>
+    2025 © SolkLib - Développé par Jean-Paul Solkiewicz
+  </footer>
+
+  <script type="module">
+    // =====================
+    // CORE ISOMORPHE (JS pur)
+    // =====================
+    export function createStore(initial) {
+      let state = initial;
+      const subs = new Set();
+      return {
+        get: () => state,
+        set: (update) => {
+          state = typeof update === 'function' ? update(state) : { ...state, ...update };
+          subs.forEach(fn => fn(state));
+        },
+        subscribe: (fn) => (subs.add(fn), () => subs.delete(fn))
+      };
+    }
+
+    export async function fetcher(url, { timeoutMs = 8000, retries = 0 } = {}) {
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        const ctrl = new AbortController();
+        const id = setTimeout(() => ctrl.abort(), timeoutMs);
+        try {
+          const res = await fetch(url, { signal: ctrl.signal });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const ct = res.headers.get('content-type') || '';
+          if (ct.includes('application/json')) return await res.json();
+          return await res.text();
+        } catch (e) {
+          if (attempt === retries) throw e;
+          // backoff linéaire simple
+          await new Promise(r => setTimeout(r, 300 * (attempt + 1)));
+        } finally {
+          clearTimeout(id);
+        }
+      }
+    }
+
+    export function task(promiseLike) {
+      // transforme une promesse en { data, error }
+      return Promise.resolve(promiseLike)
+        .then(data => ({ data, error: null }))
+        .catch(error => ({ data: null, error }));
+    }
+
+    // =====================
+    // DONNÉES: snippets (démo)
+    // =====================
+    /**
+     * Chaque snippet contient: id, title, category, envs, badges, description, code
+     * envs: ["vanilla", "next", "nuxt", "node"] — ici on affiche Vanilla seulement, mais on garde le champ pour l'avenir.
+     */
+    const snippets = [
+      {
+        id: 'vars-types-basics',
+        title: 'Variables et types (let, const, typeof)',
+        category: 'Variables et types',
+        envs: ['vanilla','node'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Apprends quand utiliser const (valeur non réassignée) et let (réassignable), puis identifie les principaux types (number, string, boolean, null, undefined, object, array) avec typeof, Array.isArray et les cas particuliers comme null.',
+        code: `// const: référence non réassignée\nconst PI = 3.1416;\n\n// let: variable réassignable\nlet counter = 0;\ncounter = counter + 1;\n\n// Détection des types usuels\nconst values = [\n  42,\n  'texte',\n  true,\n  null,\n  undefined,\n  { a: 1 },\n  [1, 2, 3]\n];\n\nfor (const value of values) {\n  let typeName = typeof value;\n  if (value === null) typeName = 'null';\n  if (Array.isArray(value)) typeName = 'array';\n  console.log('valeur =', value, '| type =', typeName);\n}`
+      },
+      {
+        id: 'ops-basics',
+        title: 'Opérations de base (+, -, *, /, **, %)',
+        category: 'Opérations de base',
+        envs: ['vanilla','node'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Maîtrise les opérateurs arithmétiques et les variantes d’assignation (+=, -=, *=, /=). Découvre également l’exponentiation (**) et le modulo (%) pour calculer des restes, utile en logique de cycles ou d’alternance.',
+        code: `let x = 10;\n\n// Assignations composées\nx += 5; // 15\nx *= 2; // 30\n\nconst y = 7;\n\n// Opérations usuelles\nconst resultats = {\n  addition: x + y,\n  soustraction: x - y,\n  multiplication: x * y,\n  division: x / y,\n  puissance: x ** 2,\n  modulo: x % y\n};\n\nconsole.log(resultats);`
+      },
+      {
+        id: 'strings-basics',
+        title: 'Chaînes: interpolation, trim, includes, slice',
+        category: 'Chaînes',
+        envs: ['vanilla','node'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Nettoie des espaces inutiles (trim), vérifie la présence d’un motif (includes) et extrait des sous-chaînes (slice). Combine ces opérations pour préparer et valider des entrées utilisateur.',
+        code: `const name = 'Ada ';\n\n// trim: supprime espaces en début/fin\nconst cleaned = name.trim();\n\n// Concaténation simple\nconst greeting = 'Bonjour, ' + cleaned + '!';\n\n// includes: recherche de sous-chaîne\nconst hasScript = 'javascript'.includes('script');\n\n// slice: extrait une partie (début inclus, fin exclue)\nconst segment = 'abcdef'.slice(1, 4); // 'bcd'\n\nconsole.log({ cleaned, greeting, hasScript, segment });`
+      },
+      {
+        id: 'arrays-essentials',
+        title: 'Tableaux: map, filter, reduce',
+        category: 'Tableaux',
+        envs: ['vanilla','node'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Utilise map pour transformer, filter pour sélectionner, et reduce pour agréger en une valeur (somme, moyenne, objet, etc.). Ce trio couvre 90% des manipulations de tableaux modernes.',
+        code: `const numbers = [1, 2, 3, 4];\n\n// map: transforme chaque élément\nconst doubled = numbers.map(n => n * 2);\n\n// filter: garde seulement ceux qui vérifient la condition\nconst evens = numbers.filter(n => n % 2 === 0);\n\n// reduce: agrège en une seule valeur\nconst sum = numbers.reduce((acc, n) => acc + n, 0);\n\nconsole.log({ doubled, evens, sum });`
+      },
+      {
+        id: 'objects-essentials',
+        title: 'Objets: destructuration, rest/spread',
+        category: 'Objets',
+        envs: ['vanilla','node'],
+        badges: ['🌀 SSR-safe'],
+        description: 'La destructuration extrait des propriétés en une ligne. Les opérateurs rest/spread permettent de copier et fusionner des objets sans muter l’original, une base pour écrire du code prévisible.',
+        code: `const user = { id: 1, name: 'Ava', role: 'admin' };\n\n// Destructuration + renommage\nconst { id: userId, name, role } = user;\n\n// Immutabilité par spread (copie superficielle)\nconst userWithFlag = { ...user, active: true };\n\nconsole.log({ userId, name, role, userWithFlag });`
+      },
+      {
+        id: 'functions-decls',
+        title: 'Fonctions: déclaration, expression, arrow',
+        category: 'Fonctions',
+        envs: ['vanilla','node'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Compare les trois formes: déclaration nommée (hoisting), expression (souple) et flèche (this lexical). Choisis la forme selon le besoin de nommage, de contexte this et de lisibilité.',
+        code: `// Déclaration nommée (hoisting)\nfunction add(a, b) {\n  return a + b;\n}\n\n// Expression de fonction\nconst subtract = function(a, b) {\n  return a - b;\n};\n\n// Fonction fléchée (this lexical)\nconst multiply = (a, b) => a * b;\n\nconsole.log(add(2, 3));\nconsole.log(subtract(5, 1));\nconsole.log(multiply(4, 2));`
+      },
+      {
+        id: 'conditions-essentials',
+        title: 'Conditions: if/else et switch',
+        category: 'Conditions',
+        envs: ['vanilla','node'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Utilise if/else pour des décisions simples et switch pour des choix multiples sur la même variable. Vise des branches courtes et claires; délègue les détails à des fonctions dédiées.',
+        code: `const role = 'editor';\n\n// if / else pour cas simples\nif (role === 'admin') {\n  console.log('Accès total');\n} else if (role === 'editor') {\n  console.log('Accès limité');\n} else {\n  console.log('Lecture seule');\n}\n\n// switch pour choix multiples sur une même variable\nswitch (role) {\n  case 'admin':\n    console.log('Code: A');\n    break;\n  case 'editor':\n    console.log('Code: E');\n    break;\n  default:\n    console.log('Code: R');\n}`
+      },
+      {
+        id: 'loops-essentials',
+        title: 'Boucles: for...of, for...in, while',
+        category: 'Boucles',
+        envs: ['vanilla','node'],
+        badges: ['🌀 SSR-safe'],
+        description: 'for...of itère les valeurs d’un tableau; for...in parcourt les clés (préférer Object.keys sur objets). while convient aux boucles contrôlées par condition. Privilégie map/filter/reduce quand c’est plus expressif.',
+        code: `const letters = ['a', 'b', 'c'];\n\n// for...of: valeurs d'un tableau\nfor (const value of letters) {\n  console.log('for...of →', value);\n}\n\nconst point = { x: 1, y: 2 };\n\n// for...in: clés d'un objet (ou préfère Object.keys)\nfor (const key in point) {\n  console.log('for...in →', key, point[key]);\n}\n\n// while: répète tant que la condition est vraie\nlet i = 0;\nwhile (i < 3) {\n  console.log('while →', i);\n  i = i + 1;\n}`
+      },
+      {
+        id: 'dates-essentials',
+        title: 'Dates: format, ajout jours',
+        category: 'Dates',
+        envs: ['vanilla','node'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Crée des dates, formate en ISO et selon la locale, et ajoute des jours avec les timestamps (ms). Garde en tête les fuseaux et l’UTC; pour des besoins avancés, envisage Intl.DateTimeFormat.',
+        code: `const d = new Date('2025-01-02T10:00:00Z');\n\nconst iso = d.toISOString();\nconst locale = d.toLocaleString('fr-FR');\n\nfunction addDays(date, days) {\n  const msPerDay = 864e5; // 24 * 60 * 60 * 1000\n  return new Date(date.getTime() + days * msPerDay);\n}\n\nconst plus7 = addDays(d, 7).toISOString();\n\nconsole.log({ iso, locale, plus7 });`
+      },
+      {
+        id: 'regex-essentials',
+        title: 'Regex: tester et capturer',
+        category: 'Regex',
+        envs: ['vanilla','node'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Teste un motif (test) et récupère des occurrences (match). Les classes et quantificateurs permettent de décrire des structures de texte; ajuste la complexité pas à pas et valide avec des cas réels.',
+        code: `const email = 'user@example.com';\n\n// Test d'un motif simple d'email\nconst emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;\nconst isValid = emailPattern.test(email);\nconsole.log('email valide ? ', isValid);\n\n// Extraction de nombres\nconst text = 'prix: 42, bonus: 7';\nconst numbers = text.match(/(\d+)/g);\nconsole.log('nombres =', numbers);`
+      },
+      {
+        id: 'errors-try-catch',
+        title: 'Erreurs: try/catch/finally',
+        category: 'Erreurs',
+        envs: ['vanilla','node'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Encadre le code risqué avec try/catch, en renvoyant une valeur de repli et un message utile. Utilise finally pour libérer des ressources (timers, connexions) quel que soit le résultat.',
+        code: `function parseJsonSafe(str) {\n  try {\n    // Peut lancer une exception si la chaîne est invalide\n    return JSON.parse(str);\n  } catch (error) {\n    console.error('JSON invalide:', error.message);\n    return null;\n  } finally {\n    // Nettoyages éventuels (fermer un timer, annuler une requête, etc.)\n  }\n}\n\nconsole.log(parseJsonSafe('{"a":1}'));\nconsole.log(parseJsonSafe('{oops}'));`
+      },
+      {
+        id: 'timers-timeout-interval',
+        title: 'Timers: setTimeout / setInterval',
+        category: 'Timers',
+        envs: ['vanilla','node'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Déclenche une action plus tard (setTimeout) ou périodiquement (setInterval). Pense à nettoyer (clearTimeout/clearInterval) pour éviter les fuites et les actions fantômes.',
+        code: `// Exécution différée\nconst timeoutId = setTimeout(() => {\n  console.log('plus tard');\n}, 300);\n\n// Exécution périodique\nlet ticks = 0;\nconst intervalId = setInterval(() => {\n  ticks = ticks + 1;\n  console.log('tick', ticks);\n  if (ticks === 3) {\n    clearInterval(intervalId);\n  }\n}, 200);`
+      },
+      {
+        id: 'dom-select-manip',
+        title: 'DOM: sélection + manipulation',
+        category: 'DOM',
+        envs: ['vanilla'],
+        badges: ['🌐 DOM-only'],
+        description: 'Sélectionne des éléments (querySelector), crée des nœuds (createElement) et insère dans la page (appendChild). Modifie le contenu (textContent) en veillant à éviter l’injection HTML non désirée.',
+        code: `const title = document.querySelector('h1');\nif (title) {\n  title.textContent = 'Hello DOM';\n}\n\nconst paragraph = document.createElement('p');\nparagraph.textContent = 'Paragraphe ajouté.';\ndocument.body.appendChild(paragraph);`
+      },
+      {
+        id: 'dom-events',
+        title: 'DOM: événements (click, input)',
+        category: 'DOM',
+        envs: ['vanilla'],
+        badges: ['🌐 DOM-only'],
+        description: 'Réagis aux interactions utilisateur: click pour déclencher des actions, input pour lire la saisie en temps réel. Utilise addEventListener et retire les écouteurs quand ils ne sont plus nécessaires.',
+        code: `const button = document.createElement('button');\nbutton.textContent = 'Clique moi';\ndocument.body.appendChild(button);\n\nbutton.addEventListener('click', () => {\n  alert('click!');\n});\n\nconst input = document.createElement('input');\ndocument.body.appendChild(input);\n\ninput.addEventListener('input', (event) => {\n  console.log('valeur:', event.target.value);\n});`
+      },
+      {
+        id: 'async-await-fetch',
+        title: 'fetch + async/await (JSON)',
+        category: 'Async',
+        envs: ['vanilla','node','next','nuxt'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Enchaîne await pour écrire du code asynchrone lisible. Vérifie res.ok, gère les erreurs (try/catch) et retourne un JSON typique d’API. Ajoute un timeout/AbortController si besoin.',
+        code: `async function fetchJson(url) {\n  try {\n    const response = await fetch(url);\n    if (!response.ok) {\n      throw new Error('HTTP ' + response.status);\n    }\n    return await response.json();\n  } catch (error) {\n    console.error('Échec requête:', error.message);\n    return null;\n  }\n}\n\nfetchJson('https://api.github.com').then(data => {\n  console.log('data =', data);\n});`
+      },
+      {
+        id: 'modules-import-export',
+        title: 'Modules: export / import (ESM)',
+        category: 'Modules',
+        envs: ['vanilla','node','next','nuxt'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Découpe le code en modules réutilisables. Exporte (nommé) ce qui doit être public et importe depuis les autres fichiers. Assure-toi que les scripts sont en type="module" en navigateur.',
+        code: `// math.js\nexport function add(a, b) {\n  return a + b;\n}\n\nexport const PI = 3.1416;\n\n// main.js\nimport { add, PI } from './math.js';\n\nconsole.log(add(2, 3));\nconsole.log(PI);`
+      },
+      {
+        id: 'classes-constructors',
+        title: 'Constructeurs et classes',
+        category: 'Classes',
+        envs: ['vanilla','node'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Structure des objets avec un état interne et des méthodes. Utilise les champs privés (#) pour encapsuler et des accesseurs (get) pour exposer des valeurs calculées en lecture.',
+        code: `class Counter {\n  #value = 0;\n\n  constructor(start = 0) {\n    this.#value = start;\n  }\n\n  inc() {\n    this.#value = this.#value + 1;\n  }\n\n  get value() {\n    return this.#value;\n  }\n}\n\nconst counter = new Counter(2);\ncounter.inc();\nconsole.log(counter.value);`
+      },
+      {
+        id: 'storage-web',
+        title: 'Stockage Web: localStorage / sessionStorage',
+        category: 'Stockage web',
+        envs: ['vanilla'],
+        badges: ['🌐 DOM-only'],
+        description: 'Sauvegarde des paires clé/valeur côté navigateur (persistance onglet/session). Sérialise en JSON pour stocker des objets. Attention: taille limitée, pas chiffré, visible par le domaine.',
+        code: `// Stockage simple\nlocalStorage.setItem('theme', 'dark');\nconst theme = localStorage.getItem('theme');\nconsole.log('theme:', theme);\n\n// Stocker un objet (JSON)\nconst prefs = { lang: 'fr', compact: true };\nlocalStorage.setItem('prefs', JSON.stringify(prefs));\n\nconst loaded = JSON.parse(localStorage.getItem('prefs') || '{}');\nconsole.log('prefs:', loaded);\n\n// Session seulement\nsessionStorage.setItem('flash', 'ok');`
+      },
+      {
+        id: 'utils-handypack',
+        title: 'Utilitaires pratiques (debounce, clamp, range)',
+        category: 'Utilitaires',
+        envs: ['vanilla','node'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Debounce limite la fréquence d’exécution (UX plus fluide), clamp borne une valeur entre min/max, et range génère une séquence d’indices pratique pour des boucles et rendus.',
+        code: `// Évite les appels trop fréquents\nconst debounce = (fn, wait = 200) => {\n  let timeoutId;\n  return (...args) => {\n    clearTimeout(timeoutId);\n    timeoutId = setTimeout(() => fn(...args), wait);\n  };\n};\n\n// Borne une valeur entre min et max\nconst clamp = (n, min, max) => Math.min(Math.max(n, min), max);\n\n// Crée un tableau [0, 1, ..., n-1]\nconst range = (n) => Array.from({ length: n }, (_, i) => i);\n\n// Exemple d'usage\nif (typeof window !== 'undefined' && window.addEventListener) {\n  window.addEventListener('resize', debounce(() => {\n    console.log('resized');\n  }, 250));\n}\n\nconsole.log('clamp:', clamp(15, 0, 10));\nconsole.log('range:', range(5));`
+      }
+      ,
+      {
+        id: 'vanilla-intersectionobserver-lazy',
+        title: 'Vanilla: Lazy images avec IntersectionObserver',
+        category: 'DOM',
+        envs: ['vanilla'],
+        badges: ['🌐 DOM-only'],
+        description: 'Charge les images uniquement lorsqu’elles entrent dans le viewport pour améliorer la perf.',
+        code: `const images = document.querySelectorAll('img[data-src]');\n\nconst observer = new IntersectionObserver((entries, obs) => {\n  for (const entry of entries) {\n    if (!entry.isIntersecting) continue;\n    const img = entry.target;\n    img.src = img.getAttribute('data-src');\n    img.removeAttribute('data-src');\n    obs.unobserve(img);\n  }\n}, { rootMargin: '200px' });\n\nimages.forEach(img => observer.observe(img));`
+      },
+      {
+        id: 'vanilla-form-validation',
+        title: 'Vanilla: Validation formulaire (API de contrainte)',
+        category: 'Formulaires',
+        envs: ['vanilla'],
+        badges: ['🌐 DOM-only'],
+        description: 'Utilise l’API de validation native: required, pattern, setCustomValidity et reportValidity.',
+        code: `const form = document.querySelector('form');\nconst email = document.querySelector('input[type="email"]');\n\nform?.addEventListener('submit', (e) => {\n  if (!email?.validity.valid) {\n    e.preventDefault();\n    email.setCustomValidity('Adresse email invalide');\n    email.reportValidity();\n  } else {\n    email.setCustomValidity('');\n  }\n});`
+      },
+      {
+        id: 'vanilla-urlsearchparams',
+        title: 'Vanilla: URLSearchParams (lire/écrire query)',
+        category: 'URL',
+        envs: ['vanilla'],
+        badges: ['🌐 DOM-only'],
+        description: 'Lire, modifier et pousser des paramètres de requête sans recharger la page.',
+        code: `const params = new URLSearchParams(window.location.search);\nconst page = params.get('page') || '1';\nparams.set('lang', 'fr');\n\nconst newUrl = window.location.pathname + '?' + params.toString();\nwindow.history.replaceState(null, '', newUrl);\n\nconsole.log('page =', page, '| url =', newUrl);`
+      }
+      ,
+      // =====================
+      // Next.js
+      // =====================
+      {
+        id: 'next-route-handler',
+        title: 'Next.js: Route Handler (API)',
+        category: 'Next.js',
+        envs: ['next'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Exemple de handler API (app router). GET renvoie du JSON et POST lit le corps JSON.',
+        code: `// app/api/hello/route.ts\nexport async function GET(request) {\n  return Response.json({ message: 'Hello from API' }, { status: 200 });\n}\n\nexport async function POST(request) {\n  const body = await request.json();\n  return Response.json({ received: body }, { status: 201 });\n}`
+      },
+      {
+        id: 'next-server-component',
+        title: 'Next.js: Server Component (SSR fetch)',
+        category: 'Next.js',
+        envs: ['next'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Composant serveur qui récupère des données côté serveur (no-store pour données non cachées).',
+        code: `// app/page.tsx\nexport default async function Page() {\n  const res = await fetch('https://api.github.com', { cache: 'no-store' });\n  const data = await res.json();\n  return (\n    <main>\n      <h1>Server Component</h1>\n      <pre>{JSON.stringify(data, null, 2)}</pre>\n    </main>\n  );\n}`
+      },
+      {
+        id: 'next-client-component',
+        title: 'Next.js: Client Component (CSR + interactions)',
+        category: 'Next.js',
+        envs: ['next'],
+        badges: ['🌐 DOM-only'],
+        description: 'Composant client avec état et interaction, exécuté côté navigateur.',
+        code: `'use client'\n\nimport { useEffect, useState } from 'react';\n\nexport default function Counter() {\n  const [count, setCount] = useState(0);\n\n  useEffect(() => {\n    console.log('mounted');\n  }, []);\n\n  return (\n    <div>\n      <button onClick={() => setCount(count + 1)}>+1</button>\n      <div>count = {count}</div>\n    </div>\n  );\n}`
+      },
+      {
+        id: 'next-middleware',
+        title: 'Next.js: Middleware (logging/redirect)',
+        category: 'Next.js',
+        envs: ['next'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Middleware au bord (Edge) pour logguer ou rediriger selon le chemin.',
+        code: `// middleware.ts\nimport { NextResponse } from 'next/server';\n\nexport function middleware(request) {\n  const { pathname } = request.nextUrl;\n  if (pathname.startsWith('/admin')) {\n    // Exemple: rediriger si non autorisé\n    // return NextResponse.redirect(new URL('/login', request.url));\n  }\n  return NextResponse.next();\n}\n\nexport const config = { matcher: ['/((?!_next|api).*)'] };`
+      },
+      {
+        id: 'next-dynamic-route',
+        title: 'Next.js: Route dynamique (params)',
+        category: 'Next.js',
+        envs: ['next'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Exemple de fichier route dynamique lisant un paramètre d’URL.',
+        code: `// app/blog/[slug]/page.tsx\nexport default async function BlogPost({ params }) {\n  const { slug } = params;\n  return <h1>Article: {slug}</h1>;\n}`
+      },
+      {
+        id: 'next-page-metadata',
+        title: 'Next.js: Metadata (SEO basique)',
+        category: 'Next.js',
+        envs: ['next'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Expose des métadonnées de page via l’export metadata.',
+        code: `// app/about/page.tsx\nexport const metadata = {\n  title: 'À propos',\n  description: 'Présentation du site',\n};\n\nexport default function AboutPage() {\n  return <main><h1>À propos</h1></main>;\n}`
+      }
+      ,
+      // =====================
+      // Nuxt.js
+      // =====================
+      {
+        id: 'nuxt-api-route',
+        title: 'Nuxt: Route serveur (API Nitro)',
+        category: 'Nuxt.js',
+        envs: ['nuxt'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Handler serveur simple avec Nitro (runtime Node/Edge).',
+        code: `// server/api/hello.get.ts\nexport default defineEventHandler(async (event) => {\n  return { message: 'Hello from Nuxt API' };\n});`
+      },
+      {
+        id: 'nuxt-typed-composable',
+        title: 'Nuxt: Composable typé (client/SSR)',
+        category: 'Nuxt.js',
+        envs: ['nuxt'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Composable générique pour récupérer des données côté client ou SSR.',
+        code: `// composables/useApi.ts\nexport function useApi<T>(url: string) {\n  return useAsyncData<T>('api:' + url, () => $fetch<T>(url));\n}`
+      },
+      {
+        id: 'nuxt-page-use-composable',
+        title: 'Nuxt: Page consommant le composable',
+        category: 'Nuxt.js',
+        envs: ['nuxt'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Page Nuxt utilisant le composable pour afficher des données.',
+        code: `// pages/index.vue\n<script setup lang="ts">\nconst { data, pending, error } = await useApi<any>('/api/hello');\n<\/script>\n\n<template>\n  <main>\n    <h1>Nuxt Page</h1>\n    <div v-if="pending">Chargement...</div>\n    <pre v-else-if="data">{{ data }}</pre>\n    <div v-else-if="error">Erreur: {{ error.message }}</div>\n  </main>\n</template>`
+      },
+      {
+        id: 'nuxt-route-middleware',
+        title: 'Nuxt: Route middleware (auth/redirection)',
+        category: 'Nuxt.js',
+        envs: ['nuxt'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Middleware exécuté côté client/SSR avant l’entrée sur la page.',
+        code: `// middleware/auth.global.ts\nexport default defineNuxtRouteMiddleware((to, from) => {\n  const isLoggedIn = false;\n  if (to.path.startsWith('/admin') && !isLoggedIn) {\n    return navigateTo('/login');\n  }\n});`
+      },
+      {
+        id: 'nuxt-plugin-provide',
+        title: 'Nuxt: Plugin (provide/inject)',
+        category: 'Nuxt.js',
+        envs: ['nuxt'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Expose une fonction utilitaire dans toute l’app via provide/inject.',
+        code: `// plugins/utils.client.ts\nexport default defineNuxtPlugin(() => {\n  return {\n    provide: {\n      hello(name: string) {\n        return 'Hello ' + name;\n      }\n    }\n  };\n});\n\n// Usage: const { $hello } = useNuxtApp();\n// console.log($hello('Nuxt'));`
+      },
+      {
+        id: 'nuxt-runtime-config',
+        title: 'Nuxt: useRuntimeConfig (serveur)',
+        category: 'Nuxt.js',
+        envs: ['nuxt'],
+        badges: ['🌀 SSR-safe'],
+        description: 'Lit une variable depuis le runtime config sur une route serveur.',
+        code: `// server/api/info.get.ts\nexport default defineEventHandler(() => {\n  const config = useRuntimeConfig();\n  return { publicApi: config.public.apiBase || 'n/a' };\n});`
+      }
+      ,
+      // =====================
+      // Node.js
+      // =====================
+      {
+        id: 'node-fetch-timeout-retry',
+        title: 'Node: fetch (timeout + retries)',
+        category: 'Node.js',
+        envs: ['node'],
+        badges: ['🖥️ Node-ready'],
+        description: 'Fetch côté Node avec AbortController pour timeout et quelques retries.',
+        code: `async function fetchWithRetry(url, { timeoutMs = 5000, retries = 1 } = {}) {\n  for (let attempt = 0; attempt <= retries; attempt++) {\n    const controller = new AbortController();\n    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);\n    try {\n      const res = await fetch(url, { signal: controller.signal });\n      if (!res.ok) throw new Error('HTTP ' + res.status);\n      return await res.json();\n    } catch (error) {\n      if (attempt === retries) throw error;\n      await new Promise(r => setTimeout(r, 300 * (attempt + 1)));\n    } finally {\n      clearTimeout(timeoutId);\n    }\n  }\n}\n\nfetchWithRetry('https://api.github.com', { timeoutMs: 3000, retries: 2 })\n  .then(console.log)\n  .catch(console.error);`
+      },
+      {
+        id: 'node-http-server',
+        title: 'Node: HTTP server minimal (sans framework)',
+        category: 'Node.js',
+        envs: ['node'],
+        badges: ['🖥️ Node-ready'],
+        description: 'Serveur HTTP de base avec le module natif http.',
+        code: `const http = require('http');\n\nconst server = http.createServer((req, res) => {\n  res.writeHead(200, { 'content-type': 'application/json' });\n  res.end(JSON.stringify({ ok: true, path: req.url }));\n});\n\nserver.listen(3000, () => {\n  console.log('http://localhost:3000');\n});`
+      },
+      {
+        id: 'node-cli-stdin-json',
+        title: 'Node: Script CLI (stdin → JSON)',
+        category: 'Node.js',
+        envs: ['node'],
+        badges: ['🖥️ Node-ready'],
+        description: 'Lit l’entrée standard, tente un parse JSON et imprime un résultat structuré.',
+        code: `#!/usr/bin/env node\n\nlet input = '';\nprocess.stdin.setEncoding('utf8');\nprocess.stdin.on('data', chunk => { input += chunk; });\nprocess.stdin.on('end', () => {\n  input = input.trim();\n  try {\n    const obj = JSON.parse(input);\n    console.log(JSON.stringify({ ok: true, data: obj }, null, 2));\n  } catch (error) {\n    console.log(JSON.stringify({ ok: false, error: error.message }, null, 2));\n  }\n});\n\n// Utilisation: echo '{"a":1}' | node script.js`
+      },
+      {
+        id: 'node-fs-json',
+        title: 'Node: fs/promises lire/écrire JSON',
+        category: 'Node.js',
+        envs: ['node'],
+        badges: ['🖥️ Node-ready'],
+        description: 'Charge un fichier JSON, le modifie en mémoire et réécrit sur disque.',
+        code: `const { readFile, writeFile } = require('fs').promises;\n\nasync function updateJson(path) {\n  const raw = await readFile(path, 'utf8');\n  const data = JSON.parse(raw);\n  data.updatedAt = new Date().toISOString();\n  await writeFile(path, JSON.stringify(data, null, 2));\n}\n\nupdateJson('./data.json').then(() => console.log('ok')).catch(console.error);`
+      },
+      {
+        id: 'node-env-vars',
+        title: 'Node: variables d’environnement (fallbacks)',
+        category: 'Node.js',
+        envs: ['node'],
+        badges: ['🖥️ Node-ready'],
+        description: 'Lit des variables d’environnement avec valeurs par défaut pour robustesse.',
+        code: `const PORT = Number(process.env.PORT || 3000);\nconst NODE_ENV = process.env.NODE_ENV || 'development';\n\nconsole.log({ PORT, NODE_ENV });`
+      },
+      {
+        id: 'node-cli-args',
+        title: 'Node: arguments CLI (process.argv)',
+        category: 'Node.js',
+        envs: ['node'],
+        badges: ['🖥️ Node-ready'],
+        description: 'Parse simple des arguments en ligne de commande sans dépendance.',
+        code: `// Usage: node app.js --name Ava --debug\nconst args = process.argv.slice(2);\n\nfunction parseArgs(xs) {\n  const out = {};\n  for (let i = 0; i < xs.length; i++) {\n    const cur = xs[i];\n    if (cur.startsWith('--')) {\n      const key = cur.slice(2);\n      const next = xs[i + 1];\n      if (!next || next.startsWith('--')) {\n        out[key] = true;\n      } else {\n        out[key] = next;\n        i++;\n      }\n    }\n  }\n  return out;\n}\n\nconsole.log(parseArgs(args));`
+      },
+    ];
+
+    // =====================
+    // ÉTAT & RENDU (Vanilla)
+    // =====================
+    const state = createStore({
+      q: '',
+      cat: 'Tous',
+      env: 'Tous'
+    });
+
+    const $q = document.getElementById('q');
+    const $cats = document.getElementById('cats');
+    const $envs = document.getElementById('envs');
+    const $list = document.getElementById('list');
+
+    const uniq = (xs) => Array.from(new Set(xs));
+
+    function mountFilters() {
+      const cats = ['Tous', ...uniq(snippets.map(s => s.category))];
+      const envs = ['Tous','vanilla','next','nuxt','node'];
+
+      $cats.innerHTML = cats.map(c => `<div class="chip" data-type="cat" data-value="${c}">${c}</div>`).join('');
+      $envs.innerHTML = envs.map(e => `<div class="chip" data-type="env" data-value="${e}">${e}</div>`).join('');
+
+      // état initial
+      activateChip($cats, 'Tous');
+      activateChip($envs, 'Tous');
+
+      [$cats, $envs].forEach($wrap => {
+        $wrap.addEventListener('click', (e) => {
+          const chip = e.target.closest('.chip');
+          if (!chip) return;
+          const type = chip.getAttribute('data-type');
+          const value = chip.getAttribute('data-value');
+          const parent = chip.parentElement;
+          activateChip(parent, value);
+          if (type === 'cat') state.set({ cat: value });
+          if (type === 'env') state.set({ env: value });
+        });
+      });
+
+      $q.addEventListener('input', (e) => state.set({ q: e.target.value.trim().toLowerCase() }));
+    }
+
+    function activateChip(container, value) {
+      container.querySelectorAll('.chip').forEach(el => el.setAttribute('data-active', String(el.getAttribute('data-value') === value)));
+    }
+
+    function matchesFilters(s, st) {
+      const txt = `${s.title} ${s.description} ${s.category}`.toLowerCase();
+      const qOk = !st.q || txt.includes(st.q);
+      const catOk = st.cat === 'Tous' || s.category === st.cat;
+      const envOk = st.env === 'Tous' || !st.env || s.envs.includes(st.env);
+      return qOk && catOk && envOk;
+    }
+
+    function render() {
+      const st = state.get();
+      const items = snippets
+        .filter(s => matchesFilters(s, st));
+      if (!items.length) {
+        $list.innerHTML = `<div class="card"><p>Aucun résultat. Essaie un autre filtre.</p></div>`;
+        return;
+      }
+      $list.innerHTML = items.map(s => snippetCard(s)).join('');
+      // bind buttons
+      $list.querySelectorAll('[data-copy]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const code = btn.closest('.card').querySelector('code').textContent;
+          try {
+            await navigator.clipboard.writeText(code);
+            btn.textContent = 'Copié !';
+            btn.classList.add('ok');
+            setTimeout(() => { btn.textContent = 'Copier'; btn.classList.remove('ok'); }, 1400);
+          } catch (e) {
+            alert('Échec de la copie');
+          }
+        });
+      });
+    }
+
+    function snippetCard(s) {
+      const badges = (s.badges||[]).map(b => `<span class="badge">${b}</span>`).join('');
+      return `
+        <article class="card" data-id="${s.id}">
+          <div class="title">
+            <h3>${s.title}</h3>
+            <div class="badges">${badges}</div>
+          </div>
+          <div class="desc">${s.description}</div>
+          <pre><code>${formatCode(s.code)}</code></pre>
+          <div class="actions">
+            <button class="btn primary" data-copy>Copier</button>
+            <span class="badge">${s.category}</span>
+          </div>
+        </article>`;
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;');
+    }
+
+    function formatCode(code) {
+      // 1) Échapper HTML
+      let html = escapeHtml(code);
+      // 2) Colorer commentaires block /* ... */ (multilignes)
+      html = html.replace(/\/\*[\s\S]*?\*\//g, (m) => `<span class="cmt">${m}</span>`);
+      // 3) Colorer commentaires ligne // ...
+      html = html.replace(/(^|\n)(\s*\/\/.*)(?=$|\n)/g, (full, p1, p2) => `${p1}<span class="cmt">${p2}</span>`);
+      return html;
+    }
+
+    // Boot
+    mountFilters();
+    state.subscribe(render);
+    render();
+  </script>
+</body>
+</html>
